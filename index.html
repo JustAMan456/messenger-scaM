@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>скаМ</title>
+    <!-- Подключаем CryptoJS для шифрования -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- Подключаем Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f0f0f0;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark {
+            background: #22252d;
+            color: #e1e1e1;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            transition: transform 0.3s;
+        }
+        body.dark .sidebar {
+            background: #2a2d37;
+            border-right: 1px solid #444;
+        }
+        .sidebar-header {
+            padding: 15px;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-header i {
+            cursor: pointer;
+        }
+        .chat-list {
+            padding: 10px;
+        }
+        .chat-item {
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        body.dark .chat-item {
+            border-bottom: 1px solid #444;
+        }
+        .chat-item:hover {
+            background: #f5f5f5;
+        }
+        body.dark .chat-item:hover {
+            background: #333;
+        }
+        .chat-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .chat-item .chat-info {
+            flex: 1;
+        }
+        .chat-item .chat-name {
+            font-weight: 500;
+        }
+        .chat-item .chat-preview {
+            color: #777;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        body.dark .chat-item .chat-preview {
+            color: #aaa;
+        }
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 10px;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        body.dark .chat-header {
+            background: #1a73e8;
+        }
+        .chat-header .chat-title {
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+        .chat-header .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background: url('https://telegram.org/img/t_logo.png') repeat;
+            background-size: 100px;
+            background-attachment: fixed;
+        }
+        body.dark .chat-messages {
+            background: #22252d;
+        }
+        .message {
+            max-width: 60%;
+            margin: 5px 10px;
+            padding: 10px;
+            border-radius: 10px;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .message.sent {
+            background: #d9fdd3;
+            margin-left: auto;
+        }
+        body.dark .message.sent {
+            background: #2a2d37;
+        }
+        .message.received {
+            background: #fff;
+            margin-right: auto;
+        }
+        body.dark .message.received {
+            background: #333;
+        }
+        .message .timestamp {
+            font-size: 0.7em;
+            color: #777;
+            text-align: right;
+            margin-top: 5px;
+        }
+        .chat-input {
+            padding: 10px;
+            background: #fff;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+        }
+        body.dark .chat-input {
+            background: #2a2d37;
+            border-top: 1px solid #444;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        body.dark .chat-input input {
+            background: #333;
+            border: 1px solid #555;
+            color: #e1e1e1;
+        }
+        .chat-input button, .call-btn, .video-call-btn {
+            padding: 10px 20px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .chat-input button:hover, .call-btn:hover, .video-call-btn:hover {
+            background: #006699;
+        }
+        .video-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .video-container video {
+            width: 45%;
+            margin: 10px;
+            border: 2px solid #fff;
+            border-radius: 10px;
+        }
+        .end-call-btn {
+            position: absolute;
+            bottom: 20px;
+            background: #ff4444;
+            padding: 10px 30px;
+        }
+        .end-call-btn:hover {
+            background: #cc3333;
+        }
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: #fff;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        body.dark .settings-panel {
+            background: #2a2d37;
+        }
+        .settings-panel h2 {
+            margin-top: 0;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #0088cc;
+            color: white;
+            border-radius: 5px;
+            animation: fadeOut 3s forwards;
+            z-index: 2000;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .chat-area {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span>Мессенджер</span>
+                <i class="fas fa-cog" onclick="toggleSettings()"></i>
+            </div>
+            <div class="chat-list" id="chat-list">
+                <div class="chat-item" onclick="selectChat('User1', 'user')">
+                    <img src="https://via.placeholder.com/40" alt="User1">
+                    <div class="chat-info">
+                        <div class="chat-name">User1</div>
+                        <div class="chat-preview">Привет, как дела?</div>
+                    </div>
+                </div>
+                <div class="chat-item" onclick="selectChat('Group Chat', 'group')">
+                    <img src="https://via.placeholder.com/40" alt="Group">
+                    <div class="chat-info">
+                        <div class="chat-name">Group Chat</div>
+                        <div class="chat-preview">Обсуждаем планы...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-area">
+            <div class="chat-header">
+                <i class="fas fa-bars" onclick="toggleSidebar()" id="menu-btn"></i>
+                <span class="chat-title" id="current-chat">Выберите чат</span>
+                <div class="chat-actions">
+                    <button class="call-btn" onclick="startCall()">📞 Звонок</button>
+                    <button class="video-call-btn" onclick="startVideoCall()">📹 Видеозвонок</button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input">
+                <input type="text" id="message-input" placeholder="Введите сообщение...">
+                <button onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+    <div class="video-container" id="video-container">
+        <video id="local-video" autoplay playsinline muted></video>
+        <video id="remote-video" autoplay playsinline></video>
+        <button class="end-call-btn" onclick="endCall()">Завершить звонок</button>
+    </div>
+    <div class="settings-panel" id="settings-panel">
+        <h2>Настройки</h2>
+        <label><input type="checkbox" id="dark-mode" onchange="toggleDarkMode()"> Темная тема</label>
+        <button onclick="logout()">Выйти</button>
+    </div>
+
+    <script>
+        // Ключ для шифрования (в реальном приложении должен быть безопасно передан)
+        const ENCRYPTION_KEY = 'my-secret-key-123';
+        let currentChat = null;
+        let currentChatType = 'user'; // 'user' или 'group'
+        let localStream;
+        let peerConnection;
+        const configuration = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
+
+        // Инициализация LocalStorage
+        const chats = JSON.parse(localStorage.getItem('chats')) || {
+            'User1': [],
+            'Group Chat': []
+        };
+
+        // Функция шифрования сообщения
+        function encryptMessage(message) {
+            return CryptoJS.AES.encrypt(message, ENCRYPTION_KEY).toString();
+        }
+
+        // Функция дешифрования сообщения
+        function decryptMessage(encrypted) {
+            try {
+                const bytes = CryptoJS.AES.decrypt(encrypted, ENCRYPTION_KEY);
+                return bytes.toString(CryptoJS.enc.Utf8);
+            } catch (e) {
+                return '[Ошибка дешифрования]';
+            }
+        }
+
+        // Показ уведомления
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Сохранение сообщений в LocalStorage
+        function saveMessage(chat, message, type, sender = 'me') {
+            if (!chats[chat]) chats[chat] = [];
+            chats[chat].push({ message, type, sender, timestamp: new Date().toISOString() });
+            localStorage.setItem('chats', JSON.stringify(chats));
+        }
+
+        // Загрузка сообщений
+        function loadMessages(chat) {
+            const messages = document.getElementById('chat-messages');
+            messages.innerHTML = '';
+            if (chats[chat]) {
+                chats[chat].forEach(msg => {
+                    const decrypted = msg.type === 'text' ? decryptMessage(msg.message) : '[Media]';
+                    const messageElement = document.createElement('div');
+                    messageElement.className = `message ${msg.sender === 'me' ? 'sent' : 'received'}`;
+                    messageElement.textContent = decrypted;
+                    const timestamp = document.createElement('div');
+                    timestamp.className = 'timestamp';
+                    timestamp.textContent = new Date(msg.timestamp).toLocaleTimeString();
+                    messageElement.appendChild(timestamp);
+                    messages.appendChild(messageElement);
+                });
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+
+        // Выбор чата
+        function selectChat(chat, type) {
+            currentChat = chat;
+            currentChatType = type;
+            document.getElementById('current-chat').textContent = chat;
+            loadMessages(chat);
+            if (window.innerWidth <= 768) toggleSidebar();
+        }
+
+        // Отправка сообщения
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            if (!message || !currentChat) return;
+
+            const encrypted = encryptMessage(message);
+            const messages = document.getElementById('chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message sent';
+            messageElement.textContent = message;
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString();
+            messageElement.appendChild(timestamp);
+            messages.appendChild(messageElement);
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            saveMessage(currentChat, encrypted, 'text');
+
+            // Эмуляция ответа
+            setTimeout(() => {
+                const reply = currentChatType === 'group' ? `Ответ в группе от User${Math.floor(Math.random() * 10)}` : 'Это зашифрованный ответ!';
+                const encryptedReply = encryptMessage(reply);
+                saveMessage(currentChat, encryptedReply, 'text', 'other');
+                loadMessages(currentChat);
+                showNotification(`Новое сообщение в ${currentChat}`);
+            }, 1000);
+        }
+
+        // Переключение бокового меню
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        // Переключение настроек
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Темная тема
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        }
+
+        // Загрузка темы
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark');
+            document.getElementById('dark-mode').checked = true;
+        }
+
+        // Выход
+        function logout() {
+            localStorage.removeItem('chats');
+            localStorage.removeItem('darkMode');
+            window.location.reload();
+        }
+
+        // WebRTC для звонков
+        async function startCall() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                showNotification('Доступ к микрофону получен!');
+                // Здесь должна быть серверная сигнализация
+            } catch (err) {
+                console.error('Ошибка доступа к микрофону:', err);
+                showNotification('Не удалось получить доступ к микрофону');
+            }
+        }
+
+        async function startVideoCall() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('local-video').srcObject = localStream;
+                document.getElementById('video-container').style.display = 'flex';
+
+                peerConnection = new RTCPeerConnection(configuration);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.ontrack = event => {
+                    document.getElementById('remote-video').srcObject = event.streams[0];
+                };
+
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        console.log('ICE candidate:', event.candidate);
+                        // Отправка ICE-кандидатов на сервер
+                    }
+                };
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                console.log('Offer:', offer);
+                showNotification('Видеозвонок начат (эмуляция)');
+            } catch (err) {
+                console.error('Ошибка доступа к камере/микрофону:', err);
+                showNotification('Не удалось получить доступ к камере/микрофону');
+            }
+        }
+
+        function endCall() {
+            if (peerConnection) peerConnection.close();
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('video-container').style.display = 'none';
+            document.getElementById('local-video').srcObject = null;
+            document.getElementById('remote-video').srcObject = null;
+            showNotification('Звонок завершен');
+        }
+
+        // Обработка отправки сообщения по Enter
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Адаптивное меню
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
