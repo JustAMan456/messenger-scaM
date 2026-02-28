@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <title>Оплата по СБП</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Новый шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             background: radial-gradient(circle at top, #1a1a2e, #0f0f14 60%);
             color: #eaeaf0;
             display: flex;
@@ -27,9 +31,19 @@
 
         h1 {
             font-size: 22px;
-            font-weight: normal;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        .product-name {
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 40px;
-            max-width: 650px;
+            background: linear-gradient(45deg, #8a2be2, #ff00cc, #6a0dad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
         }
 
         .qr-wrapper {
@@ -68,6 +82,10 @@
                 font-size: 18px;
             }
 
+            .product-name {
+                font-size: 22px;
+            }
+
             .qr {
                 max-width: 250px;
             }
@@ -77,9 +95,11 @@
 <body>
 
 <div class="container">
-    <h1>
-        Проведите оплату по СБП за продукт "GAMESENSE.PUB INVITE" и вернитесь в бота оплаты
-    </h1>
+    <h1>Проведите оплату по СБП за продукт</h1>
+
+    <div class="product-name">
+        GAMESENSE.PUB INVITE
+    </div>
 
     <div class="qr-wrapper">
         <img src="qr_sbp.jpg" alt="QR код для оплаты" class="qr">
